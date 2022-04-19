@@ -7,7 +7,7 @@ try:
     GPIO.setmode(GPIO.BCM)
 
     #set up switch
-    switch = 20
+    switch = 18
     GPIO.setup(switch, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
     # Create an object hx which represents your real hx711 chip
@@ -58,7 +58,7 @@ try:
     #Now everytime you (push a button) it will take the weight and display it...
     while (True):
         if(GPIO.input(switch)== True):
-            print(hx.get_weight_mean(20), 'g')
+            print("Weight on scale is currently... ", hx.get_weight_mean(), 'g')
 
 
 #to end code
