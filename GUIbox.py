@@ -1,4 +1,12 @@
 import tkinter as tk
+from tkinter.scrolledtext import ScrolledText
+import datetime
+from random import randint
+
+global WEIGHTS
+WEIGHTS = {}
+
+################# GUI #########################
 
 #This class basically allows for the change in GUI pages.
 class SeaofBTCapp(tk.Tk):
@@ -42,8 +50,9 @@ class StartPage(tk.Frame):
         )
         label.place(relx="0.03", rely="0.06", x="0", y="0")
 
-        #This button will make the sensor record a weight
-        takew = tk.Button(self, text="Take Weight")
+        #This button will make the sensor record a weight, while also updating the page after initalization.
+        takew = tk.Button(self, text="Take Weight",
+                            command=lambda:[controller.frames[RecordW].add_data()])
         takew.place(
             relheight="0.17", relwidth="0.34", relx="0.09", rely="0.27", y="0"
         )
@@ -72,21 +81,21 @@ class StartPage(tk.Frame):
         frame.pack(side="top")
 
 
-#IGNORE
+#IGNORE FOR NOW
 class PageOne(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Page One!!!", font="{Yu Gothic Light} 24 {}")
+        label = tk.Label(self, text="Recorded Images", font="{Yu Gothic Light} 24 {}")
         label.pack(pady=10,padx=10)
 
-        button1 = tk.Button(self, text="Back to Home",
+        #The Back Button
+        back = tk.Button(self, text="Back to Home",
                             command=lambda: controller.show_frame(StartPage))
-        button1.pack()
+        back.place(
+            anchor="nw", relwidth="0.17", relx="0.77", rely="0.91", x="0", y="0"
+        )
 
-        button2 = tk.Button(self, text="Page Two",
-                            command=lambda: controller.show_frame(RecordW))
-        button2.pack()
 
 #The Page for the Recorded Weights and their Time
 class RecordW(tk.Frame):
@@ -96,10 +105,6 @@ class RecordW(tk.Frame):
         label = tk.Label(self, text="Recorded Weights", font="{Yu Gothic Light} 24 {}")
         label.pack(pady=10,padx=10)
 
-        #The Text Box
-        text1 = tk.Text(self, state=tk.DISABLED)
-        text1.configure(height="10", width="50")
-        text1.place(anchor="nw", height="520", width="800", x="0", y="0")
 
         #The Back Button
         back = tk.Button(self, text="Back to Home",
@@ -108,7 +113,30 @@ class RecordW(tk.Frame):
             anchor="nw", relwidth="0.17", relx="0.77", rely="0.91", x="0", y="0"
         )
 
+    #Displays an updated list of the data
+    def add_data(self):
         
+        #key is in place of the weight
+        key = randint(1,1000)
+
+        #dictionary to hold date and time of the weight taken
+        WEIGHTS[key] = str(datetime.datetime.now())
+
+        #creating the textbox
+        textb = ScrolledText(self)
+        for keys in WEIGHTS:
+            textb.insert(tk.END, str(WEIGHTS[keys])+ ": "+str(keys) + "\n")
+        textb['state'] = tk.DISABLED
+        textb.place(anchor="nw", height="520", width="800", x="0", y="0")
+
+
+#################### Weight sensor ###########################
+
+
+
+
+
+
 
 app = SeaofBTCapp()
 app.mainloop()
