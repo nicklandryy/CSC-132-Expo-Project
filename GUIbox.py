@@ -77,7 +77,7 @@ class StartPage(tk.Frame):
             anchor="nw", relheight=".17", relwidth="0.34", relx=".56", rely=".56", y="0"
         )
 
-        frame.configure(height="600", width="800")
+        frame.configure(height="500", width="700")
         frame.pack(side="top")
 
 
@@ -127,7 +127,7 @@ class RecordW(tk.Frame):
         for keys in WEIGHTS:
             textb.insert(tk.END, str(WEIGHTS[keys])+ ": "+str(keys) + "\n")
         textb['state'] = tk.DISABLED
-        textb.place(anchor="nw", height="520", width="800", x="0", y="0")
+        textb.place(anchor="nw", height="390", width="800", x="0", y="0")
 
 
 #################### Weight sensor ###########################
