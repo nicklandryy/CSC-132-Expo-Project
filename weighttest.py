@@ -7,12 +7,12 @@ try:
     GPIO.setmode(GPIO.BCM)
 
     #set up switch
-    switch = 18
+    switch = 17
     GPIO.setup(switch, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
     # Create an object hx which represents your real hx711 chip
     # Required input parameters are only 'dout_pin' and 'pd_sck_pin'
-    hx = HX711(dout_pin=5, pd_sck_pin=6)
+    hx = HX711(dout_pin=5, pd_sck_pin=6, select_channel='B')
 
     # measure tare and save the value as offset for current channel
     # and gain selected. That means channel A and gain 128
@@ -33,7 +33,7 @@ try:
     # In order to calculate the conversion ratio to some units, in my case I want grams,
     # you must have known weight.
     input('Put known weight on the scale and then press Enter')
-    reading = hx.get_data_mean()
+    reading = hx.get_data_mean(20)
     if reading:
         print('Mean value from HX711 subtracted by offset:', reading)
         known_weight_grams = input(
@@ -58,7 +58,7 @@ try:
     #Now everytime you (push a button) it will take the weight and display it...
     while (True):
         if(GPIO.input(switch)== True):
-            print("Weight on scale is currently... ", hx.get_weight_mean(), 'g')
+            print("Weight on scale is currently... ", hx.get_weight_mean(1), 'g')
 
 
 #to end code

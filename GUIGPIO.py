@@ -2,74 +2,21 @@ import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 import datetime
 from random import randint
-import RPi.GPIO as GPIO  # import GPIO
+import time
+import RPi.GPIO as GPIO
 from hx711 import HX711  # import the class HX711
-from time import sleep
 
 global WEIGHTS
 WEIGHTS = {}
 
 try:
-
-    
-#################### Weight sensor ###########################
-    #set up GPIO
+    #setup GPIO
     GPIO.setmode(GPIO.BCM)
+    DOOR_SENSOR_PIN =18
 
-    #set up switch
-    switch = 18
-    GPIO.setup(switch, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-    # Create an object hx which represents your real hx711 chip
-    # Required input parameters are only 'dout_pin' and 'pd_sck_pin'
-    hx = HX711(dout_pin=5, pd_sck_pin=6)
 
-    # measure tare and save the value as offset for current channel
-    # and gain selected. That means channel A and gain 128
-    err = hx.zero()
-
-    # check if successful
-    if err:
-        raise ValueError('Tare is unsuccessful.')
-
-    reading = hx.get_raw_data_mean()
-    if reading:  # always check if you get correct value or only False
-        # now the value is close to 0
-        print('Data subtracted by offset but still not converted to units:',
-              reading)
-    else:
-        print('invalid data', reading)
-
-    # In order to calculate the conversion ratio to some units, in my case I want grams,
-    # you must have known weight.
-    input('Put known weight on the scale and then press Enter')
-    reading = hx.get_data_mean()
-    if reading:
-        print('Mean value from HX711 subtracted by offset:', reading)
-        known_weight_grams = input(
-            'Write how many grams it was and press Enter: ')
-        try:
-            value = float(known_weight_grams)
-            print(value, 'grams')
-        except ValueError:
-            print('Expected integer or float and I have got:',
-                  known_weight_grams)
-
-        # set scale ratio for particular channel and gain which is
-        # used to calculate the conversion to units. Required argument is only
-        # scale ratio. Without arguments 'channel' and 'gain_A' it sets
-        # the ratio for current channel and gain.
-        ratio = reading / value  # calculate the ratio for channel A and gain 128
-        hx.set_scale_ratio(ratio)  # set ratio for current channel
-        print('Ratio is set.')
-    else:
-        raise ValueError('Cannot calculate mean value. Try debug mode. Variable reading:', reading)
-
-    #Now everytime you (push a button) it will take the weight and display it...
-    while (True):
-        if(GPIO.input(switch)== True):
-            print("Weight on scale is currently... ", hx.get_weight_mean(), 'g')
-
+    GPIO.setup(DOOR_SENSOR_PIN, GPIO.IN, pull_up_down = GPIO.PUD_UP)
 
     ################# GUI #########################
 
@@ -182,7 +129,7 @@ try:
         def add_data(self):
             
             #key is in place of the weight
-            key = randint(1,1000)
+            key = str(hx.get_weight_mean(1)) + 'g'
 
             #dictionary to hold date and time of the weight taken
             WEIGHTS[key] = str(datetime.datetime.now())
@@ -194,7 +141,92 @@ try:
             textb['state'] = tk.DISABLED
             textb.place(anchor="nw", height="390", width="800", x="0", y="0")
 
+
+    #################### Weight sensor ###########################
+    hx = HX711(dout_pin=5, pd_sck_pin=6,  select_channel='B')
+    err = hx.reset()  # Before we start, reset the hx711 ( not necessary)
+    if err:  # you can check if the reset was successful
+        print('not ready')
+    else:
+        print('Ready to use')
+
+    hx.select_channel(
+        channel='B')  # Select desired channel. Either 'A' or 'B' at any time.
+
+    # Read data several, or only one, time and return mean value
+    # argument "readings" is not required default value is 30
+    data = hx.get_raw_data_mean(readings=30)
+
+    if data:  # always check if you get correct value or only False
+        print('Raw data:', data)
+    else:
+        print('invalid data')
+
+    # measure tare and save the value as offset for current channel
+    # and gain selected. That means channel A and gain 64
+    result = hx.zero(readings=30)
+
+    # Read data several, or only one, time and return mean value.
+    # It subtracts offset value for particular channel from the mean value.
+    # This value is still just a number from HX711 without any conversion
+    # to units such as grams or kg.
+    data = hx.get_data_mean(readings=30)
+
+    # In order to calculate the conversion ratio to some units, in my case I want grams,
+    # you must have known weight.
+    input('Put known weight on the scale and then press Enter')
+    data = hx.get_data_mean(readings=30)
+    if data:
+        print('Mean value from HX711 subtracted by offset:', data)
+        known_weight_grams = input(
+            'Write how many grams it was and press Enter: ')
+
+        value = float(known_weight_grams)
+
+    ratio = data / value  # calculate the ratio for channel A and gain 64
+    hx.set_scale_ratio(ratio)  # set ratio for current channel
+    print('Ratio is set.')
+
+    print('Current weight on the scale in grams is: ')
+    print(hx.get_weight_mean(30), 'g')
+
+    for i in range(40):
+        # the value will vary because it is only one immediate reading.
+        # the default speed for hx711 is 10 samples per second
+        print(hx.get_weight_mean(readings=1), 'g')
+
+    
+    #constructing GUI
     app = SeaofBTCapp()
+
+    #Because we do not know if it is closed or open at the beginning
+    isOpen = False
+    oldIsOpen = None
+
+    # Because there is no While loop that works with tkinter, used the .after() function
+    #recursively, so that while the GUI is running, every .1 second, the sensor is checked
+    def task():
+        #tells tkinter to look for a global variable, since it doesnt work like normal
+        global isOpen
+        global oldIsOpen
+
+        #get new inputs
+        oldIsOpen = isOpen
+        isOpen = GPIO.input(DOOR_SENSOR_PIN)
+
+        #Checks for changes in sensor, only prints when there is.
+        if(isOpen and (isOpen != oldIsOpen)):
+            print("Space is unoccupied")
+        elif(isOpen != oldIsOpen):
+            print("Space is occupied")
+            #adds weight and updates frame.
+            app.frames[RecordW].add_data()
+
+        #schedules the task to run again in .1 second
+        app.after(100,task)
+            
+
+    app.after(100,task)
     app.mainloop()
 
 #to end code
@@ -202,15 +234,8 @@ except (KeyboardInterrupt, SystemExit):
     print("Shutting Down... Please Wait...")
 finally:
     GPIO.cleanup()
-
-
-
-
-
-#################### Weight sensor ###########################
-
-
-
+    #this force closes the GUI
+    app.destroy()
 
 
 
